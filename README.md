@@ -1,6 +1,6 @@
 # 🚀 ApexNexus: The Pinnacle of Self-Evolving AI Orchestration
 
-![ApexNexus Banner](https://via.placeholder.com/1200x300?text=ApexNexus%20-%20Evolve%20Beyond%20Limits) <!-- Replace with actual banner image -->
+![ApexNexus Banner](https://via.placeholder.com/1200x300?text=ApexNexus%20-%20Evolve%20Beyond%20Limits) 
 
 Welcome to **ApexNexus**, the cutting-edge open-source AI agent and platform built on the revolutionary Kimi K2 architecture. Designed as a self-evolving orchestrator for the Apex MetaHive system, ApexNexus empowers users with intelligent query handling, resource orchestration, and dynamic sub-agent integration. Whether you're building advanced AI workflows, automating complex tasks, or exploring self-improving systems, ApexNexus delivers unparalleled precision, resilience, and efficacy.
 
@@ -37,11 +37,11 @@ ApexNexus isn't just an AI—it's a living ecosystem:
 At its core, ApexNexus leverages the **Kimi K2** model from Moonshot AI, integrated with a stateful Python backend.
 
 ### Key Components:
-1. **Agent Instruction**: A comprehensive bootstrap prompt defining roles, principles, boot sequences, workflows, and tool references. (See [agent.md](docs/agent.md) for full details.)
+1. **Agent Instruction**: A comprehensive bootstrap prompt defining roles, principles, boot sequences, workflows, and tool references. (See [ApexNexus.txt] for full details.)
 2. **Main Script**: A Streamlit-powered Python app handling UI, tool dispatch, database interactions, and API calls. (See [app.py](app.py).)
 3. **Sandbox Environment**: Isolated filesystem, venvs, and restricted executions for security.
 4. **Databases**: SQLite for users/history/memory; ChromaDB for vector embeddings.
-5. **Evo-Modules**: YAML-based modules in `sandbox/evo-modules/` for dynamic extensions like meta-cognition or anomaly detection.
+5. **Evo-Modules**: YAML-based modules in `sandbox/evo-data/system` for dynamic extensions like meta-cognition or anomaly detection.
 
 ```mermaid
 graph TD
@@ -104,7 +104,7 @@ Get started in minutes!
    streamlit run app.py
    ```
 
-### Docker (Optional)
+### Docker (Optional) - This is not ready/available yet.
 ```
 docker build -t apexnexus .
 docker run -p 8501:8501 -e KIMI_API_KEY=your_key -e LANGSEARCH_API_KEY=your_key apexnexus
