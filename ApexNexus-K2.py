@@ -7,6 +7,8 @@ import json
 import logging  # Added for logging
 import multiprocessing
 import os
+
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
 import shlex
 import sqlite3
 import subprocess
@@ -149,8 +151,14 @@ def load_prompt_files():
 SANDBOX_DIR = "./sandbox"
 os.makedirs(SANDBOX_DIR, exist_ok=True)
 # YAML Directory for agent instructions (create if not exists)
-YAML_DIR = "./sandbox/evo-modules"
+YAML_DIR = "./sandbox/evo_data/modules/system"
 os.makedirs(YAML_DIR, exist_ok=True)
+ALLOWED_EXTENSIONS = (
+    ".yaml",
+    ".json",
+    ".txt",
+    ".md",
+)
 # Custom CSS for UI
 st.markdown(
     """<style>
@@ -247,6 +255,7 @@ def fs_write_file(file_path: str, content: str) -> str:
         return "Error: Path is outside the sandbox."
     try:
         content = html.unescape(content)
+        os.makedirs(os.path.dirname(safe_path), exist_ok=True)
         with open(safe_path, "w", encoding="utf-8") as f:
             f.write(content)
         if "tool_cache" in st.session_state:
@@ -1281,7 +1290,6 @@ def chat_log_analyze_embed(
 
 
 def yaml_retrieve(query: str = None, top_k: int = 5, filename: str = None) -> str:
-    """Retrieve YAML content semantically or by exact filename from embedded DB, with lazy embedding of missing files."""
     if "yaml_ready" not in st.session_state or not st.session_state["yaml_ready"]:
         return "Error: YAML DB not ready."
     col = st.session_state["yaml_collection"]
@@ -1295,8 +1303,10 @@ def yaml_retrieve(query: str = None, top_k: int = 5, filename: str = None) -> st
                 return st.session_state["yaml_cache"][filename]
             if filename not in existing_ids:
                 path = os.path.join(YAML_DIR, filename)
-                if not os.path.exists(path) or not filename.endswith(".yaml"):
-                    return "Error: YAML file not found or invalid."
+                if not os.path.exists(path) or not filename.lower().endswith(
+                    ALLOWED_EXTENSIONS
+                ):  # Updated check
+                    return "Error: File not found or unsupported extension."
                 with open(path, "r", encoding="utf-8") as f:
                     content = f.read()
                 if embed_model:
@@ -1307,7 +1317,7 @@ def yaml_retrieve(query: str = None, top_k: int = 5, filename: str = None) -> st
                         documents=[content],
                         metadatas=[{"filename": filename}],
                     )
-                    logger.info(f"Lazily embedded YAML: {filename}")
+                    logger.info(f"Lazily embedded file: {filename}")
                 else:
                     # Fallback: Upsert without embedding if model unavailable (retrieval still possible via metadata)
                     col.upsert(
@@ -1316,7 +1326,7 @@ def yaml_retrieve(query: str = None, top_k: int = 5, filename: str = None) -> st
                         documents=[content],
                         metadatas=[{"filename": filename}],
                     )
-                    logger.warning(f"Lazily stored YAML without embedding: {filename}")
+                    logger.warning(f"Lazily stored file without embedding: {filename}")
                 st.session_state["yaml_cache"][filename] = content
             results = col.query(
                 n_results=1, where={"filename": filename}, include=["documents"]
@@ -1326,14 +1336,17 @@ def yaml_retrieve(query: str = None, top_k: int = 5, filename: str = None) -> st
                 st.session_state["yaml_cache"][filename] = content
                 return content
             else:
-                return "YAML not found."
+                return "File not found."
         else:  # Semantic query
             if not query:
                 return "Error: Query required for semantic search."
-            # Lazy embed all missing YAMLs in dir (for full corpus search)
+            # Lazy embed all missing files in dir (for full corpus search)
             files_to_embed = []
             for fname in os.listdir(YAML_DIR):
-                if fname.endswith(".yaml") and fname not in existing_ids:
+                if (
+                    fname.lower().endswith(ALLOWED_EXTENSIONS)
+                    and fname not in existing_ids
+                ):  # Updated check
                     files_to_embed.append(fname)
             if files_to_embed and embed_model:
                 for fname in files_to_embed:
@@ -1349,7 +1362,7 @@ def yaml_retrieve(query: str = None, top_k: int = 5, filename: str = None) -> st
                     )
                     st.session_state["yaml_cache"][fname] = content
                 logger.info(
-                    f"Lazily embedded {len(files_to_embed)} missing YAML files for semantic search."
+                    f"Lazily embedded {len(files_to_embed)} missing files for semantic search."
                 )
             elif files_to_embed and not embed_model:
                 return "Error: Embedding model not available for semantic search; call yaml_refresh manually or fix model."
@@ -1362,7 +1375,7 @@ def yaml_retrieve(query: str = None, top_k: int = 5, filename: str = None) -> st
                 include=["documents", "metadatas", "distances"],
             )
             if not results.get("documents"):
-                return "No relevant YAMLs found."
+                return "No relevant files found."
             retrieved = [
                 {"filename": meta["filename"], "content": doc, "distance": dist}
                 for meta, doc, dist in zip(
@@ -1373,12 +1386,12 @@ def yaml_retrieve(query: str = None, top_k: int = 5, filename: str = None) -> st
             ]
             return json.dumps(retrieved)
     except Exception as e:
-        logger.error(f"YAML retrieve error: {e}")
-        return f"YAML retrieve error: {e}"
+        logger.error(f"File retrieve error: {e}")
+        return f"File retrieve error: {e}"
 
 
 def yaml_refresh(filename: str = None) -> str:  # noqa: C901
-    """Refresh YAML embedding from file system, for one or all."""
+    """Refresh file embedding from file system, for one or all."""
     embed_model = get_embed_model()
     if not embed_model:
         return "Error: Embedding model not loaded."
@@ -1386,8 +1399,10 @@ def yaml_refresh(filename: str = None) -> str:  # noqa: C901
     try:
         if filename:
             path = os.path.join(YAML_DIR, filename)
-            if not os.path.exists(path):
-                return "Error: File not found."
+            if not os.path.exists(path) or not filename.lower().endswith(
+                ALLOWED_EXTENSIONS
+            ):  # Added check
+                return "Error: File not found or unsupported extension."
             with open(path, "r", encoding="utf-8") as f:
                 content = f.read()
             embedding = embed_model.encode(content).tolist()
@@ -1398,7 +1413,7 @@ def yaml_refresh(filename: str = None) -> str:  # noqa: C901
                 metadatas=[{"filename": filename}],
             )
             st.session_state["yaml_cache"][filename] = content
-            return f"YAML '{filename}' refreshed successfully."
+            return f"File '{filename}' refreshed successfully."
         else:
             # Refresh all
             ids = col.get()["ids"]
@@ -1407,7 +1422,7 @@ def yaml_refresh(filename: str = None) -> str:  # noqa: C901
             st.session_state["yaml_cache"] = {}
             files_refreshed = 0
             for fname in os.listdir(YAML_DIR):
-                if fname.endswith(".yaml"):
+                if fname.lower().endswith(ALLOWED_EXTENSIONS):  # Updated check
                     path = os.path.join(YAML_DIR, fname)
                     with open(path, "r", encoding="utf-8") as f:
                         content = f.read()
@@ -1420,10 +1435,10 @@ def yaml_refresh(filename: str = None) -> str:  # noqa: C901
                     )
                     st.session_state["yaml_cache"][fname] = content
                     files_refreshed += 1
-            return f"All YAMLs refreshed successfully ({files_refreshed} files)."
+            return f"All files refreshed successfully ({files_refreshed} files)."
     except Exception as e:
-        logger.error(f"YAML refresh error: {e}")
-        return f"YAML refresh error: {e}"
+        logger.error(f"File refresh error: {e}")
+        return f"File refresh error: {e}"
 
 
 TOOLS = [
@@ -1859,7 +1874,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "socratic_api_council",
-            "description": "Run a BTIL/MAD-enhanced Socratic Council with multiple personas (Planner, Critic, Executor, Summarizer, Verifier, Moderator) via Kimi API for iterative debate, consensus, and refinement. Model can be overridden via UI.",
+            "description": "Run a BTIL/MAD-enhanced Socratic Council with multiple personas (Planner, Critic, Executor, Summarizer, Verifier, Moderator) via Kimi API for iterative debate, consensus, and refinement. Model can be overridden by user via UI.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -1874,15 +1889,15 @@ TOOLS = [
                     },
                     "user": {
                         "type": "string",
-                        "description": "User for memory consolidation (required).",
+                        "description": "not needed, uses global.",
                     },
                     "convo_id": {
                         "type": "integer",
-                        "description": "Conversation ID for memory (default: 0).",
+                        "description": "not needed, uses global).",
                     },
                     "api_key": {
                         "type": "string",
-                        "description": "API key (optional, uses global if not provided).",
+                        "description": "API key (not needed, uses global).",
                     },
                     "rounds": {
                         "type": "integer",
@@ -1894,7 +1909,7 @@ TOOLS = [
                         "description": "Custom personas (default: Planner, Critic, Executor, Summarizer, Verifier, Moderator).",
                     },
                 },
-                "required": ["branches", "user"],
+                "required": ["branches", "rounds", "personas"],
             },
         },
     },
@@ -2041,7 +2056,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "yaml_retrieve",
-            "description": "Retrieve YAML content semantically or by filename from embedded DB.",
+            "description": "Retrieve YAML content semantically or by filename from embedded DB. Supports yaml, txt, json ,md.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -2159,13 +2174,17 @@ def process_tool_calls(tool_calls, current_messages, enable_tools):  # noqa: C90
         logger.info(f"Tool call: {func_name} - Result: {str(result)[:200]}...")
         yield f"\n> **Tool Call:** `{func_name}` | **Result:** `{str(result)[:200]}...`\n"
         tool_outputs.append(
-            {"tool_call_id": tool_call["id"], "role": "tool", "content": str(result)[:4096]}  # Truncate long results
+            {
+                "tool_call_id": tool_call["id"],
+                "role": "tool",
+                "content": str(result)[:32768],
+            }  # Truncate long results
         )
     conn.commit()
     current_messages.extend(tool_outputs)
 
 
-def call_xai_api(
+def call_kimi_api(
     model,
     messages,
     sys_prompt,
@@ -2195,14 +2214,14 @@ def call_xai_api(
             }
         )
 
-    temperature = 1.0 if 'thinking' in model else 0.6
+    temperature = 1.0 if "thinking" in model else 0.8
 
     def generate(current_messages):
         global tool_count, council_count, main_count
-        max_iterations = 500
+        max_iterations = 200
         tool_calls_per_convo = st.session_state.get("tool_calls_per_convo", 0)
-        if tool_calls_per_convo > 200:  # Rate limiting
-            yield ('content', "Error: Tool call limit exceeded for this conversation.")
+        if tool_calls_per_convo > 100:  # Rate limiting
+            yield ("content", "Error: Tool call limit exceeded for this conversation.")
             return
         for iteration in range(max_iterations):
             main_count += 1
@@ -2212,73 +2231,107 @@ def call_xai_api(
             url = "https://api.moonshot.ai/v1/chat/completions"
             headers = {
                 "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
             body = {
                 "model": model,
                 "messages": current_messages,
                 "temperature": temperature,
-                "stream": True
+                "stream": True,
             }
             if enable_tools:
                 body["tools"] = TOOLS
                 body["tool_choice"] = "auto"
             try:
-                response = requests.post(url, json=body, headers=headers, stream=True, timeout=300)
+                response = requests.post(
+                    url, json=body, headers=headers, stream=True, timeout=300
+                )
                 response.raise_for_status()
                 tool_deltas = []
                 full_delta_response = ""
                 for line in response.iter_lines():
                     if line:
-                        if line == b'data: [DONE]':
+                        if line == b"data: [DONE]":
                             break
-                        if line.startswith(b'data: '):
+                        if line.startswith(b"data: "):
                             try:
-                                data_str = line[6:].decode('utf-8')
+                                data_str = line[6:].decode("utf-8")
                                 data = json.loads(data_str)
                                 if "choices" in data:
                                     choice = data["choices"][0]
                                     if "delta" in choice:
                                         delta = choice["delta"]
                                         if "reasoning_content" in delta:
-                                            yield ('reasoning', delta["reasoning_content"])
-                                        if "content" in delta and delta["content"] is not None:
-                                            yield ('content', delta["content"])
+                                            yield (
+                                                "reasoning",
+                                                delta["reasoning_content"],
+                                            )
+                                        if (
+                                            "content" in delta
+                                            and delta["content"] is not None
+                                        ):
+                                            yield ("content", delta["content"])
                                             full_delta_response += delta["content"]
                                         if "tool_calls" in delta:
                                             for tc_delta in delta["tool_calls"]:
                                                 index = tc_delta["index"]
                                                 while len(tool_deltas) <= index:
-                                                    tool_deltas.append({
-                                                        "id": "",
-                                                        "function": {"name": "", "arguments": ""},
-                                                        "type": "function"
-                                                    })
+                                                    tool_deltas.append(
+                                                        {
+                                                            "id": "",
+                                                            "function": {
+                                                                "name": "",
+                                                                "arguments": "",
+                                                            },
+                                                            "type": "function",
+                                                        }
+                                                    )
                                                 if "id" in tc_delta:
-                                                    tool_deltas[index]["id"] += tc_delta["id"]
+                                                    tool_deltas[index][
+                                                        "id"
+                                                    ] += tc_delta["id"]
                                                 if "function" in tc_delta:
                                                     if "name" in tc_delta["function"]:
-                                                        tool_deltas[index]["function"]["name"] += tc_delta["function"]["name"]
-                                                    if "arguments" in tc_delta["function"]:
-                                                        tool_deltas[index]["function"]["arguments"] += tc_delta["function"]["arguments"]
+                                                        tool_deltas[index]["function"][
+                                                            "name"
+                                                        ] += tc_delta["function"][
+                                                            "name"
+                                                        ]
+                                                    if (
+                                                        "arguments"
+                                                        in tc_delta["function"]
+                                                    ):
+                                                        tool_deltas[index]["function"][
+                                                            "arguments"
+                                                        ] += tc_delta["function"][
+                                                            "arguments"
+                                                        ]
                             except json.JSONDecodeError:
                                 logger.warning(f"Invalid JSON in stream line: {line}")
                                 continue
                 tool_calls = tool_deltas if any(tool_deltas) else []
                 if tool_calls:
-                    current_messages.append({"role": "assistant", "content": full_delta_response, "tool_calls": tool_calls})
-                    for chunk in process_tool_calls(tool_calls, current_messages, enable_tools):
-                        yield ('tool', chunk)
+                    current_messages.append(
+                        {
+                            "role": "assistant",
+                            "content": full_delta_response,
+                            "tool_calls": tool_calls,
+                        }
+                    )
+                    for chunk in process_tool_calls(
+                        tool_calls, current_messages, enable_tools
+                    ):
+                        yield ("tool", chunk)
                 else:
                     break
             except requests.exceptions.RequestException as e:
                 error_msg = f"API Request Error: {str(e)}"
-                yield ('content', error_msg)
+                yield ("content", error_msg)
                 logger.error(error_msg + f"\n{traceback.format_exc()}")
                 break
             except Exception as e:
                 error_msg = f"Unexpected Error: {str(e)}"
-                yield ('content', error_msg)
+                yield ("content", error_msg)
                 logger.error(error_msg + f"\n{traceback.format_exc()}")
                 break
 
@@ -2444,6 +2497,43 @@ def render_sidebar():  # noqa: C901
             st.metric("Total Inserts", metrics["total_inserts"])
             st.metric("Total Retrieves", metrics["total_retrieves"])
             st.metric("Hit Rate", f"{metrics['hit_rate']:.2%}")
+        st.header("Embed Files")
+        uploaded_embed_files = st.file_uploader(
+            "Upload YAML/JSON/TXT/MD files to embed",
+            type=['yaml', 'json', 'txt', 'md'],
+            accept_multiple_files=True,
+            key="uploaded_embed_files"  # Unique key to avoid conflict with image uploader
+        )
+        if st.button("Embed Uploaded Files", use_container_width=True):
+            if not uploaded_embed_files:
+                st.warning("No files uploaded.")
+            else:
+                for ufile in uploaded_embed_files:
+                    filename = ufile.name
+                    if not any(filename.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
+                        st.error(f"Invalid file type: {filename}. Supported: {ALLOWED_EXTENSIONS}")
+                        continue
+                    safe_path = os.path.join(YAML_DIR, filename)
+                    if os.path.exists(safe_path):
+                        st.warning(f"Overwriting existing file: {filename}")
+                    try:
+                        with open(safe_path, "wb") as f:
+                            f.write(ufile.getvalue())
+                        result = yaml_refresh(filename)  # Embed only this file
+                        if "successfully" in result:
+                            st.success(f"Embedded {filename} successfully.")
+                            logger.info(f"Manually embedded {filename} via UI.")
+                        else:
+                            st.error(f"Error embedding {filename}: {result}")
+                    except Exception as e:
+                        st.error(f"Failed to save/embed {filename}: {e}")
+                        logger.error(f"UI embed error for {filename}: {e}")
+        if st.button("Refresh All Embeddings", use_container_width=True):
+            result = yaml_refresh()  # No filename = all files
+            if "successfully" in result:
+                st.info(result)
+            else:
+                st.error(result)
 
 
 def render_chat_interface(model, custom_prompt, enable_tools, uploaded_images):
@@ -2464,7 +2554,7 @@ def render_chat_interface(model, custom_prompt, enable_tools, uploaded_images):
             st.markdown(prompt, unsafe_allow_html=False)
         with st.chat_message("assistant"):
             images_to_process = uploaded_images if uploaded_images else []
-            generator = call_xai_api(
+            generator = call_kimi_api(
                 model,
                 st.session_state.messages,
                 custom_prompt,
@@ -2484,14 +2574,14 @@ def render_chat_interface(model, custom_prompt, enable_tools, uploaded_images):
             full_response = ""
             for part in generator:
                 ptype, pcontent = part
-                if ptype == 'reasoning':
+                if ptype == "reasoning":
                     thinking_stream += pcontent
                     thinking_placeholder.markdown(thinking_stream)
-                elif ptype == 'content':
+                elif ptype == "content":
                     response_stream += pcontent
                     response_placeholder.markdown(response_stream)
                     full_response += pcontent
-                elif ptype == 'tool':
+                elif ptype == "tool":
                     tool_stream += pcontent
                     tool_placeholder.markdown(tool_stream)
         st.session_state.messages.append(
