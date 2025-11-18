@@ -2,7 +2,7 @@
 ![Banner](https://files.oaiusercontent.com/file-VlL3X9zO8wH8cY1v2pN4dR6s?se=2025-11-25T23%3A59%3A59Z&sp=r&sv=2024-11-04&sr=b&rscc=max-age%3D1209600%2C%20immutable&rscd=attachment%3B%20filename%3Dapex-nexus-banner-v2.png&sig=...)  
 *“One mind. No sub-agents. No coordination tax. Just pure, evolving, frontier-class intelligence.”*
 
-[![Stars](https://img.shields.io/github/stars/buckster1234/ApexNexus?style=social)](https://github.com/buckster1234/ApexNexus) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Kimi Powered](https://img.shields.io/badge/Powered_by-Moonshot_Kimi_K2-blue)](https://moonshot.ai) [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org)  
+[![Stars](https://img.shields.io/github/stars/buckster123/ApexNexus?style=social)](https://github.com/buckster123/ApexNexus) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Kimi Powered](https://img.shields.io/badge/Powered_by-Moonshot_Kimi_K2-blue)](https://moonshot.ai) [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org)  
 **Runs on a Raspberry Pi 5** · **Runs even better on any PC** · **Zero external services required after setup**
 
 ---
