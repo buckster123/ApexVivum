@@ -3,7 +3,7 @@
 
 <div align="center">
 
-![ApexVivum Banner](https://img.shields.io/badge/𝔸𝕡𝕖𝕏-𝕍𝕚𝕧𝕦𝕞_𝕂𝕚𝕞𝕚-0a0a0a?style=for-the-badge&logo=python&logoColor=66cccc)
+![ApexVivum Banner](https://github.com/buckster123/ApexNexus/blob/main/aurum_logo.png)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.29+-FF4B4B?style=flat-square&logo=streamlit)](https://streamlit.io)
 [![Moonshot AI](https://img.shields.io/badge/Moonshot_AI-Kimi_K2-66cccc?style=flat-square&logo=tensorflow)](https://platform.moonshot.cn)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python)](https://python.org)
