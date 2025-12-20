@@ -81,10 +81,10 @@ Visualizes embedded memories as nodes (salience-sized), edges (sim-weighted). Qu
 
 ```mermaid
 graph TD
-    A[Memory Node 1 (High Salience)] -- Sim 0.8 --> B[Node 2]
-    B -- Sim 0.6 --> C[Node 3 (Drift Anomaly)]
-    A -- Sim 0.9 --> D[Core Invariant]
-    C -. Hesitation Gate .-> E[Ternary Resolution (+1/0/-1)]
+    A[Memory Node 1 (High Salience)] -- "Sim 0.8" --> B[Node 2]
+    B -- "Sim 0.6" --> C[Node 3 (Drift Anomaly)]
+    A -- "Sim 0.9" --> D[Core Invariant]
+    C -. "Hesitation Gate" .-> E[Ternary Resolution (+1/0/-1)]
 ```
 
 ## ∴ Prima Alchemica Codex (PAC) & TPAC ∴
