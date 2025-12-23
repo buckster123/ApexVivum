@@ -231,9 +231,11 @@ graph LR
 
 run install-pi5-liteos.sh - Done! Make sure your pi is updated first.
 
+Or...
+
 # Clone the void
-git clone https://github.com/buckster123/ApexVivum-Kimi.git
-cd ApexVivum-Kimi
+git clone https://github.com/buckster123/ApexVivum.git
+cd ApexVivum
 
 # Install the alchemic dependencies
 pip install -r requirements.txt
