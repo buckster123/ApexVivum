@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-66cccc?style=flat-square)](LICENSE)
 
-**⚡ A hyper-dense, self-modifying agent orchestration engine powered by Moonshot AI's Kimi models, featuring the Prima Alchemica Codex (PAC) – a ternary-alchemical syntax for autonomous entity genesis** ⚡
+**⚡ A hyper-dense, self-modifying agent orchestration engine powered by Moonshot AI's Kimi models, featuring the Prima Alchemica Codex (PAC) – an alchemical syntax for autonomous entity genesis** ⚡
 
 </div>
 
