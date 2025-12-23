@@ -226,6 +226,11 @@ graph LR
 ## 🚀 **Installation: Summoning the Engine**
 
 ```bash
+
+# Automatic Installation on Pi-5 - Liteos/headless, and on desktop if you want:
+
+run install-pi5-liteos.sh - Done! Make sure your pi is updated first.
+
 # Clone the void
 git clone https://github.com/buckster123/ApexVivum-Kimi.git
 cd ApexVivum-Kimi
@@ -250,7 +255,6 @@ export PROFILE_MODE=1
 - `chromadb>=0.4.22`
 - `sentence-transformers>=2.2.2`
 - `openai>=1.3.0`
-- `moonshot-langchain` (custom adapter)
 - `pygit2`, `qutip`, `qiskit` (quantum sandbox)
 
 ---
